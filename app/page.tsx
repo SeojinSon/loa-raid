@@ -333,7 +333,7 @@ export default function App() {
   const [myName, setMyName] = useState("모험가");
   const [myOnly, setMyOnly] = useState(false);
   const [myId] = useState("user_me");
-  const [form, setForm] = useState({ raid: "지평의 성당 (3단계)", partyCount: 2, date: "", charName: "", className: "", power: "" });
+  const [form, setForm] = useState({ raid: "지평의 성당 (3단계)", partyCount: 2, date: "", charName: "", className: "", power: "", role: "서폿" });
   const [toast, setToast] = useState("");
   const [popup, setPopup] = useState<{ partyId: number; gi: number; role: string } | null>(null);
 
@@ -497,7 +497,7 @@ export default function App() {
       party_count: form.partyCount,
       date: form.date,
       groups: Array(form.partyCount).fill(null).map((_, i) => ({
-        members: i === 0 ? [{ accountName: myName, charName: form.charName.trim(), role: "서폿", className: form.className, power: form.power }] : [],
+        members: i === 0 ? [{ accountName: myName, charName: form.charName.trim(), role: form.role, className: form.className, power: form.power }] : [],
         applicants: [],
       })),
     };
@@ -611,6 +611,23 @@ export default function App() {
                   value={myName} disabled
                   style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ddd", background: "#f0f0f0", color: "#888", boxSizing: "border-box" }}
                 />
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <label style={{ fontSize: 12, color: "#888" }}>역할</label>
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  {["서폿", "딜러"].map((r) => (
+                    <button key={r} onClick={() => setForm((f) => ({ ...f, role: r }))}
+                      style={{
+                        flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 13, cursor: "pointer",
+                        border: `1.5px solid ${form.role === r ? (r === "서폿" ? "#7F77DD" : "#1D9E75") : "#ddd"}`,
+                        background: form.role === r ? (r === "서폿" ? "#EEEDFE" : "#E1F5EE") : "#f9f9f9",
+                        color: form.role === r ? (r === "서폿" ? "#534AB7" : "#0F6E56") : "#333",
+                        fontWeight: form.role === r ? 500 : 400,
+                      }}>
+                      {r}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div style={{ marginBottom: 8 }}>
                 <label style={{ fontSize: 12, color: "#888" }}>캐릭터명</label>

@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { DiscordSDK } from "@discord/embedded-app-sdk";
-
-const discordSdk = new DiscordSDK(process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID!);
 
 const RAIDS: Record<string, { name: string; ilvl: number }[]> = {
   "어비스": [
@@ -215,13 +212,6 @@ function MemoBox({ partyId, memo, isMaster, onSave }: {
   onSave: (partyId: number, memo: string) => void;
 }) {
   const [localMemo, setLocalMemo] = useState(memo);
-
-  useEffect(() => {
-  async function initDiscord() {
-    await discordSdk.ready();
-  }
-  initDiscord().catch(() => {});
-}, []);
 
   useEffect(() => { setLocalMemo(memo); }, [memo]);
 

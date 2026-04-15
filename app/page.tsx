@@ -68,6 +68,8 @@ const CAT_BG: Record<string, string> = {
   "에픽": "#FBEAF0", "군단장": "#E1F5EE",
 };
 
+const ADMIN_NAME = "도라지파티";
+
 interface Person {
   accountName: string; charName: string; role: string;
   className?: string; power?: string;
@@ -106,50 +108,33 @@ function ApplyPopup({ role, onConfirm, onClose }: {
   const canSubmit = charName.trim() && className;
 
   return (
-    <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: 300, border: "0.5px solid #ddd" }}>
         <p style={{ margin: "0 0 6px", fontWeight: 500, fontSize: 15 }}>신청 정보 입력</p>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: "#888" }}>{role} 슬롯에 참여할 정보를 입력하세요</p>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 12, color: "#888" }}>캐릭터명</label>
-          <input
-            autoFocus value={charName}
-            onChange={(e) => setCharName(e.target.value)}
-            placeholder="캐릭터명"
-            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }}
-          />
+          <input autoFocus value={charName} onChange={(e) => setCharName(e.target.value)} placeholder="캐릭터명"
+            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 12, color: "#888" }}>직업</label>
-          <select
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }}
-          >
+          <select value={className} onChange={(e) => setClassName(e.target.value)}
+            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }}>
             <option value="">직업 선택</option>
             {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, color: "#888" }}>전투력 (선택)</label>
-          <input
-            value={power}
-            onChange={(e) => setPower(e.target.value)}
-            placeholder="예: 6500"
-            type="number"
-            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }}
-          />
+          <input value={power} onChange={(e) => setPower(e.target.value)} placeholder="예: 6500" type="number"
+            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }} />
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onClose} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "0.5px solid #ccc", background: "#f5f5f5", fontSize: 14, cursor: "pointer" }}>취소</button>
-          <button
-            onClick={() => { if (canSubmit) onConfirm(charName.trim(), className, power); }}
-            disabled={!canSubmit}
-            style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "none", background: canSubmit ? "#7F77DD" : "#eee", color: canSubmit ? "#fff" : "#aaa", fontSize: 14, cursor: canSubmit ? "pointer" : "default", fontWeight: 500 }}
-          >
+          <button onClick={() => { if (canSubmit) onConfirm(charName.trim(), className, power); }} disabled={!canSubmit}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "none", background: canSubmit ? "#7F77DD" : "#eee", color: canSubmit ? "#fff" : "#aaa", fontSize: 14, cursor: canSubmit ? "pointer" : "default", fontWeight: 500 }}>
             신청
           </button>
         </div>
@@ -196,48 +181,25 @@ function Slots({ group, gi, canApply, accountName, onApply, onCancel, onLeave }:
         function handleClick() {
           if (isEmpty && canApply) { onApply(gi, s.role); return; }
           if (isMe) {
-            if (isConfirming) {
-              setCancelTarget(null);
-              if (s.pending) onCancel(gi); else onLeave(gi);
-            } else {
-              setCancelTarget(i);
-            }
-          } else {
-            setCancelTarget(null);
-          }
+            if (isConfirming) { setCancelTarget(null); if (s.pending) onCancel(gi); else onLeave(gi); }
+            else setCancelTarget(i);
+          } else setCancelTarget(null);
         }
 
         return (
           <div key={i} onClick={handleClick}
-            style={{
-              width: 54, height: 54, borderRadius: 10, flexShrink: 0,
-              border: `1.5px ${isEmpty ? "dashed" : "solid"} ${border}`,
-              background: bg,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              cursor: (isEmpty && canApply) || isMe ? "pointer" : "default",
-              opacity: isEmpty && !canApply ? 0.4 : 1,
-            }}>
+            style={{ width: 54, height: 54, borderRadius: 10, flexShrink: 0, border: `1.5px ${isEmpty ? "dashed" : "solid"} ${border}`, background: bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: (isEmpty && canApply) || isMe ? "pointer" : "default", opacity: isEmpty && !canApply ? 0.4 : 1 }}>
             <span style={{ fontSize: 9, fontWeight: 500, color: isConfirming ? "#E24B4A" : isSupport ? "#7F77DD" : "#888780" }}>
               {isConfirming ? "취소?" : s.role}
             </span>
             {!isEmpty ? (
               <>
-                <span style={{
-                  fontSize: s.person!.charName.length > 6 ? 8 : s.person!.charName.length > 4 ? 9 : 11,
-                  fontWeight: 500,
-                  color: isConfirming ? "#A32D2D" : isSupport ? "#534AB7" : "#222",
-                  marginTop: 1, lineHeight: 1.3, textAlign: "center",
-                  wordBreak: "break-all", width: "100%", padding: "0 3px", boxSizing: "border-box",
-                }}>
+                <span style={{ fontSize: s.person!.charName.length > 6 ? 8 : s.person!.charName.length > 4 ? 9 : 11, fontWeight: 500, color: isConfirming ? "#A32D2D" : isSupport ? "#534AB7" : "#222", marginTop: 1, lineHeight: 1.3, textAlign: "center", wordBreak: "break-all", width: "100%", padding: "0 3px", boxSizing: "border-box" }}>
                   {s.person!.charName}
                 </span>
-                {s.pending && (
-                  <span style={{ fontSize: 8, color: isConfirming ? "#E24B4A" : isSupport ? "#7F77DD" : "#888", opacity: 0.8 }}>대기</span>
-                )}
+                {s.pending && <span style={{ fontSize: 8, color: isConfirming ? "#E24B4A" : isSupport ? "#7F77DD" : "#888", opacity: 0.8 }}>대기</span>}
               </>
-            ) : (
-              <span style={{ fontSize: 20, opacity: 0.2, lineHeight: 1 }}>+</span>
-            )}
+            ) : <span style={{ fontSize: 20, opacity: 0.2, lineHeight: 1 }}>+</span>}
           </div>
         );
       })}
@@ -255,9 +217,10 @@ function GroupCard({ group, gi, isMaster, myStatus, accountName, onApply, onCanc
 }) {
   const canApply = myStatus.status === "none";
   const total = group.members.length + group.applicants.length;
-  const allPersons = [...group.members, ...group.applicants.filter(a =>
-    group.members.every(m => m.accountName !== a.accountName)
-  )];
+  const allPersons = [
+    ...group.members,
+    ...group.applicants.filter(a => group.members.every(m => m.accountName !== a.accountName)),
+  ];
 
   return (
     <div style={{ background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 12, padding: "12px 14px", marginBottom: 10 }}>
@@ -267,24 +230,15 @@ function GroupCard({ group, gi, isMaster, myStatus, accountName, onApply, onCanc
       </div>
       <Slots group={group} gi={gi} canApply={canApply} accountName={accountName} onApply={onApply} onCancel={onCancel} onLeave={onLeave} />
 
-      {/* 참여자 정보 목록 */}
       {allPersons.length > 0 && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
           {allPersons.map((p, i) => {
             const isPending = group.applicants.some(a => a.accountName === p.accountName);
             const isSupport = p.role === "서폿";
             return (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "6px 10px", borderRadius: 8,
-                background: isPending ? "#FAFAFA" : isSupport ? "#F3F0FD" : "#F5F9F5",
-                border: `0.5px solid ${isPending ? "#eee" : isSupport ? "#C5BFEF" : "#B8DFC0"}`,
-              }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: isPending ? "#FAFAFA" : isSupport ? "#F3F0FD" : "#F5F9F5", border: `0.5px solid ${isPending ? "#eee" : isSupport ? "#C5BFEF" : "#B8DFC0"}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{
-                    fontSize: 10, padding: "1px 6px", borderRadius: 10, fontWeight: 500,
-                    background: isSupport ? "#7F77DD" : "#1D9E75", color: "#fff",
-                  }}>{p.role}</span>
+                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, fontWeight: 500, background: isSupport ? "#7F77DD" : "#1D9E75", color: "#fff" }}>{p.role}</span>
                   <div>
                     <span style={{ fontSize: 12, fontWeight: 500 }}>{p.charName}</span>
                     <span style={{ fontSize: 11, color: "#aaa", marginLeft: 4 }}>({p.accountName})</span>
@@ -301,7 +255,6 @@ function GroupCard({ group, gi, isMaster, myStatus, accountName, onApply, onCanc
         </div>
       )}
 
-      {/* 방장 신청자 수락/거절 */}
       {isMaster && group.applicants.length > 0 && (
         <div style={{ marginTop: 10, borderTop: "0.5px solid #eee", paddingTop: 8 }}>
           <p style={{ fontSize: 11, color: "#888", margin: "0 0 6px" }}>신청자 관리</p>
@@ -332,6 +285,7 @@ export default function App() {
   const [selected, setSelected] = useState<number | null>(null);
   const [myName, setMyName] = useState("모험가");
   const [myOnly, setMyOnly] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [myId] = useState("user_me");
   const [form, setForm] = useState({ raid: "지평의 성당 (3단계)", partyCount: 2, date: "", charName: "", className: "", power: "", role: "서폿" });
   const [toast, setToast] = useState("");
@@ -343,6 +297,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    fetch("/api/check-admin")
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     async function loadParties() {
       const { data, error } = await supabase
         .from("parties")
@@ -350,51 +311,18 @@ export default function App() {
         .order("created_at", { ascending: false });
       if (!error && data) {
         setParties(data.map((p) => ({
-          id: p.id,
-          raid: p.raid,
-          masterId: p.master_id,
-          masterName: p.master_name,
-          partyCount: p.party_count,
-          date: p.date || "",
-          groups: p.groups,
-          memo: p.memo || "",
+          id: p.id, raid: p.raid, masterId: p.master_id, masterName: p.master_name,
+          partyCount: p.party_count, date: p.date || "", groups: p.groups, memo: p.memo || "",
         })));
       }
     }
     loadParties();
-
-    const channel = supabase
-      .channel("parties-changes")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "parties" }, (payload) => {
-        const p = payload.new as any;
-        setParties((prev) => [{
-          id: p.id, raid: p.raid, masterId: p.master_id, masterName: p.master_name,
-          partyCount: p.party_count, date: p.date || "", groups: p.groups, memo: p.memo || "",
-        }, ...prev]);
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "parties" }, (payload) => {
-        const p = payload.new as any;
-        setParties((prev) => prev.map((party) =>
-          party.id === p.id ? {
-            id: p.id, raid: p.raid, masterId: p.master_id, masterName: p.master_name,
-            partyCount: p.party_count, date: p.date || "", groups: p.groups, memo: p.memo || "",
-          } : party
-        ));
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "parties" }, (payload) => {
-        setParties((prev) => prev.filter((party) => party.id !== payload.old.id));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(loadParties, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(""), 2000);
-  }
+  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(""), 2000); }
 
-  const ADMIN_NAME = "도라지파티";
   const detailParty = parties.find((p) => p.id === selected) || null;
   const myStatus: MyStatus = detailParty ? getMyStatus(detailParty.groups, myName) : { status: "none", gi: -1 };
 
@@ -404,12 +332,12 @@ export default function App() {
     showToast("파티를 삭제했습니다.");
   }
 
-  async function updateMemo(partyId: number, memo: string) {
-    await supabase.from("parties").update({ memo }).eq("id", partyId);
-  }
-
   async function updateDate(partyId: number, date: string) {
     await supabase.from("parties").update({ date }).eq("id", partyId);
+  }
+
+  async function updateMemo(partyId: number, memo: string) {
+    await supabase.from("parties").update({ memo }).eq("id", partyId);
   }
 
   function openApplyPopup(partyId: number, gi: number, role: string) {
@@ -490,12 +418,8 @@ export default function App() {
     if (!form.charName.trim()) { showToast("캐릭터명을 입력해주세요!"); return; }
     if (!form.className) { showToast("직업을 선택해주세요!"); return; }
     const newParty = {
-      id: Date.now(),
-      raid: form.raid,
-      master_id: myName,
-      master_name: myName,
-      party_count: form.partyCount,
-      date: form.date,
+      id: Date.now(), raid: form.raid, master_id: myName, master_name: myName,
+      party_count: form.partyCount, date: form.date, memo: "",
       groups: Array(form.partyCount).fill(null).map((_, i) => ({
         members: i === 0 ? [{ accountName: myName, charName: form.charName.trim(), role: form.role, className: form.className, power: form.power }] : [],
         applicants: [],
@@ -538,24 +462,10 @@ export default function App() {
       {screen === "list" && (
         <div style={{ padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 13, color: "#888" }}>내 계정명</span>
-          <input
-            value={myName}
-            onChange={(e) => {
-              setMyName(e.target.value);
-              localStorage.setItem("loa_account_name", e.target.value);
-            }}
-            style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "0.5px solid #ccc", width: 110 }}
-          />
-          <button
-            onClick={() => setMyOnly((v) => !v)}
-            style={{
-              marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 20,
-              border: `1.5px solid ${myOnly ? "#7F77DD" : "#ccc"}`,
-              background: myOnly ? "#EEEDFE" : "#f9f9f9",
-              color: myOnly ? "#534AB7" : "#888",
-              cursor: "pointer", fontWeight: myOnly ? 500 : 400, whiteSpace: "nowrap",
-            }}
-          >
+          <input value={myName} onChange={(e) => { setMyName(e.target.value); localStorage.setItem("loa_account_name", e.target.value); }}
+            style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "0.5px solid #ccc", width: 110 }} />
+          <button onClick={() => setMyOnly((v) => !v)}
+            style={{ marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 20, border: `1.5px solid ${myOnly ? "#7F77DD" : "#ccc"}`, background: myOnly ? "#EEEDFE" : "#f9f9f9", color: myOnly ? "#534AB7" : "#888", cursor: "pointer", fontWeight: myOnly ? 500 : 400, whiteSpace: "nowrap" }}>
             내 파티만
           </button>
         </div>
@@ -573,11 +483,8 @@ export default function App() {
                 const filled = p.groups.reduce((a, g) => a + g.members.length + g.applicants.length, 0);
                 const total = p.partyCount * 4;
                 return (
-                  <div
-                    key={p.id}
-                    onClick={() => { setSelected(p.id); setScreen("detail"); }}
-                    style={{ background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 14, padding: "20px 18px", cursor: "pointer", minHeight: 140 }}
-                  >
+                  <div key={p.id} onClick={() => { setSelected(p.id); setScreen("detail"); }}
+                    style={{ background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 14, padding: "20px 18px", cursor: "pointer", minHeight: 140 }}>
                     <Badge cat={RAID_CAT[p.raid]} />
                     <p style={{ margin: "6px 0 2px", fontWeight: 500, fontSize: 14 }}>{p.raid}</p>
                     <p style={{ margin: 0, fontSize: 11, color: "#888" }}>방장: {p.masterName}</p>
@@ -607,23 +514,15 @@ export default function App() {
               <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 500 }}>내 정보</p>
               <div style={{ marginBottom: 8 }}>
                 <label style={{ fontSize: 12, color: "#888" }}>계정명</label>
-                <input
-                  value={myName} disabled
-                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ddd", background: "#f0f0f0", color: "#888", boxSizing: "border-box" }}
-                />
+                <input value={myName} disabled
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ddd", background: "#f0f0f0", color: "#888", boxSizing: "border-box" }} />
               </div>
               <div style={{ marginBottom: 8 }}>
                 <label style={{ fontSize: 12, color: "#888" }}>역할</label>
                 <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                   {["서폿", "딜러"].map((r) => (
                     <button key={r} onClick={() => setForm((f) => ({ ...f, role: r }))}
-                      style={{
-                        flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 13, cursor: "pointer",
-                        border: `1.5px solid ${form.role === r ? (r === "서폿" ? "#7F77DD" : "#1D9E75") : "#ddd"}`,
-                        background: form.role === r ? (r === "서폿" ? "#EEEDFE" : "#E1F5EE") : "#f9f9f9",
-                        color: form.role === r ? (r === "서폿" ? "#534AB7" : "#0F6E56") : "#333",
-                        fontWeight: form.role === r ? 500 : 400,
-                      }}>
+                      style={{ flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 13, cursor: "pointer", border: `1.5px solid ${form.role === r ? (r === "서폿" ? "#7F77DD" : "#1D9E75") : "#ddd"}`, background: form.role === r ? (r === "서폿" ? "#EEEDFE" : "#E1F5EE") : "#f9f9f9", color: form.role === r ? (r === "서폿" ? "#534AB7" : "#0F6E56") : "#333", fontWeight: form.role === r ? 500 : 400 }}>
                       {r}
                     </button>
                   ))}
@@ -631,42 +530,28 @@ export default function App() {
               </div>
               <div style={{ marginBottom: 8 }}>
                 <label style={{ fontSize: 12, color: "#888" }}>캐릭터명</label>
-                <input
-                  value={form.charName}
-                  onChange={(e) => setForm((f) => ({ ...f, charName: e.target.value }))}
-                  placeholder="참여할 캐릭터명"
-                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}
-                />
+                <input value={form.charName} onChange={(e) => setForm((f) => ({ ...f, charName: e.target.value }))} placeholder="참여할 캐릭터명"
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }} />
               </div>
               <div style={{ marginBottom: 8 }}>
                 <label style={{ fontSize: 12, color: "#888" }}>직업</label>
-                <select
-                  value={form.className}
-                  onChange={(e) => setForm((f) => ({ ...f, className: e.target.value }))}
-                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}
-                >
+                <select value={form.className} onChange={(e) => setForm((f) => ({ ...f, className: e.target.value }))}
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}>
                   <option value="">직업 선택</option>
                   {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label style={{ fontSize: 12, color: "#888" }}>전투력 (선택)</label>
-                <input
-                  value={form.power}
-                  onChange={(e) => setForm((f) => ({ ...f, power: e.target.value }))}
-                  placeholder="예: 6500"
-                  type="number"
-                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}
-                />
+                <input value={form.power} onChange={(e) => setForm((f) => ({ ...f, power: e.target.value }))} placeholder="예: 6500" type="number"
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }} />
               </div>
             </div>
+
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 13, color: "#888" }}>레이드 선택</label>
-              <select
-                value={form.raid}
-                onChange={(e) => setForm((f) => ({ ...f, raid: e.target.value }))}
-                style={{ width: "100%", marginTop: 6, fontSize: 14, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc" }}
-              >
+              <select value={form.raid} onChange={(e) => setForm((f) => ({ ...f, raid: e.target.value }))}
+                style={{ width: "100%", marginTop: 6, fontSize: 14, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc" }}>
                 {Object.entries(RAIDS).map(([cat, list]) => (
                   <optgroup key={cat} label={cat}>
                     {list.map((r) => <option key={r.name} value={r.name}>{r.name} (최소 {r.ilvl})</option>)}
@@ -680,37 +565,22 @@ export default function App() {
             </div>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 13, color: "#888" }}>날짜 선택</label>
-              <input
-                type="datetime-local"
-                value={form.date}
-                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                style={{ width: "100%", marginTop: 6, fontSize: 14, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}
-              />
+              <input type="datetime-local" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                style={{ width: "100%", marginTop: 6, fontSize: 14, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }} />
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 13, color: "#888" }}>공격대 규모</label>
               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                 {[1, 2, 4].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setForm((f) => ({ ...f, partyCount: n }))}
-                    style={{
-                      flex: 1, padding: "8px 0", borderRadius: 8, fontSize: 14, cursor: "pointer",
-                      border: `1.5px solid ${form.partyCount === n ? "#7F77DD" : "#ddd"}`,
-                      background: form.partyCount === n ? "#EEEDFE" : "#f9f9f9",
-                      color: form.partyCount === n ? "#534AB7" : "#333",
-                      fontWeight: form.partyCount === n ? 500 : 400,
-                    }}
-                  >
+                  <button key={n} onClick={() => setForm((f) => ({ ...f, partyCount: n }))}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, fontSize: 14, cursor: "pointer", border: `1.5px solid ${form.partyCount === n ? "#7F77DD" : "#ddd"}`, background: form.partyCount === n ? "#EEEDFE" : "#f9f9f9", color: form.partyCount === n ? "#534AB7" : "#333", fontWeight: form.partyCount === n ? 500 : 400 }}>
                     {n}파티 ({n * 4}명)
                   </button>
                 ))}
               </div>
             </div>
-            <button
-              onClick={createParty}
-              style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "#7F77DD", color: "#fff", fontSize: 15, fontWeight: 500, cursor: "pointer" }}
-            >
+            <button onClick={createParty}
+              style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "#7F77DD", color: "#fff", fontSize: 15, fontWeight: 500, cursor: "pointer" }}>
               파티 개설하기
             </button>
           </div>
@@ -727,12 +597,8 @@ export default function App() {
             {detailParty.masterId === myName ? (
               <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, color: "#888", whiteSpace: "nowrap" }}>날짜</span>
-                <input
-                  type="datetime-local"
-                  value={detailParty.date || ""}
-                  onChange={(e) => updateDate(detailParty.id, e.target.value)}
-                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 8, border: "0.5px solid #ccc", flex: 1 }}
-                />
+                <input type="datetime-local" value={detailParty.date || ""} onChange={(e) => updateDate(detailParty.id, e.target.value)}
+                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 8, border: "0.5px solid #ccc", flex: 1 }} />
               </div>
             ) : detailParty.date ? (
               <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 500 }}>
@@ -744,8 +610,7 @@ export default function App() {
           </div>
 
           {detailParty.groups.map((g, gi) => (
-            <GroupCard
-              key={gi} group={g} gi={gi}
+            <GroupCard key={gi} group={g} gi={gi}
               isMaster={detailParty.masterId === myName}
               myStatus={myStatus} accountName={myName}
               onApply={(gi, role) => openApplyPopup(detailParty.id, gi, role)}
@@ -756,15 +621,33 @@ export default function App() {
             />
           ))}
 
-          {(detailParty.masterId === myName || myName === ADMIN_NAME) && (
+          {/* 메모 */}
+          <div style={{ marginTop: 12, padding: "12px 14px", background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 12 }}>
+            <p style={{ margin: "0 0 8px", fontSize: 12, color: "#888", fontWeight: 500 }}>메모</p>
+            {detailParty.masterId === myName ? (
+              <>
+                <textarea
+                  value={detailParty.memo || ""}
+                  onChange={(e) => { if (e.target.value.length <= 100) updateMemo(detailParty.id, e.target.value); }}
+                  placeholder="파티에 대한 메모를 입력하세요 (최대 100자)"
+                  maxLength={100}
+                  style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", resize: "none", height: 72, fontFamily: "sans-serif" }}
+                />
+                <p style={{ margin: "4px 0 0", fontSize: 11, color: "#aaa", textAlign: "right" }}>
+                  {(detailParty.memo || "").length}/100
+                </p>
+              </>
+            ) : (
+              <p style={{ margin: 0, fontSize: 13, color: detailParty.memo ? "#333" : "#aaa", lineHeight: 1.6 }}>
+                {detailParty.memo || "메모 없음"}
+              </p>
+            )}
+          </div>
+
+          {(detailParty.masterId === myName || isAdmin) && (
             <button
-              onClick={() => {
-                if (confirm("정말 파티를 삭제할까요?")) {
-                  deleteParty(detailParty.id);
-                }
-              }}
-              style={{ width: "100%", padding: "10px 0", borderRadius: 10, border: "0.5px solid #E24B4A", background: "#FCEBEB", color: "#A32D2D", fontSize: 14, fontWeight: 500, cursor: "pointer", marginTop: 4 }}
-            >
+              onClick={() => { if (confirm("정말 파티를 삭제할까요?")) deleteParty(detailParty.id); }}
+              style={{ width: "100%", padding: "10px 0", borderRadius: 10, border: "0.5px solid #E24B4A", background: "#FCEBEB", color: "#A32D2D", fontSize: 14, fontWeight: 500, cursor: "pointer", marginTop: 12 }}>
               파티 삭제
             </button>
           )}
@@ -778,10 +661,8 @@ export default function App() {
       )}
 
       {screen === "list" && (
-        <button
-          onClick={() => setScreen("create")}
-          style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "#7F77DD", color: "#fff", border: "none", borderRadius: 30, padding: "14px 36px", fontSize: 15, fontWeight: 500, cursor: "pointer" }}
-        >
+        <button onClick={() => setScreen("create")}
+          style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "#7F77DD", color: "#fff", border: "none", borderRadius: 30, padding: "14px 36px", fontSize: 15, fontWeight: 500, cursor: "pointer" }}>
           + 파티 개설
         </button>
       )}

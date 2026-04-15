@@ -207,6 +207,45 @@ function Slots({ group, gi, canApply, accountName, onApply, onCancel, onLeave }:
   );
 }
 
+function MemoBox({ partyId, memo, isMaster, onSave }: {
+  partyId: number; memo: string; isMaster: boolean;
+  onSave: (partyId: number, memo: string) => void;
+}) {
+  const [localMemo, setLocalMemo] = useState(memo);
+
+  useEffect(() => { setLocalMemo(memo); }, [memo]);
+
+  useEffect(() => {
+    if (localMemo === memo) return;
+    const timer = setTimeout(() => { onSave(partyId, localMemo); }, 1000);
+    return () => clearTimeout(timer);
+  }, [localMemo]);
+
+  return (
+    <div style={{ marginTop: 12, padding: "12px 14px", background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 12 }}>
+      <p style={{ margin: "0 0 8px", fontSize: 12, color: "#888", fontWeight: 500 }}>메모</p>
+      {isMaster ? (
+        <>
+          <textarea
+            value={localMemo}
+            onChange={(e) => { if (e.target.value.length <= 100) setLocalMemo(e.target.value); }}
+            placeholder="파티에 대한 메모를 입력하세요 (최대 100자)"
+            maxLength={100}
+            style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", resize: "none", height: 72, fontFamily: "sans-serif" }}
+          />
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#aaa", textAlign: "right" }}>
+            {localMemo.length}/100
+          </p>
+        </>
+      ) : (
+        <p style={{ margin: 0, fontSize: 13, color: memo ? "#333" : "#aaa", lineHeight: 1.6 }}>
+          {memo || "메모 없음"}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function GroupCard({ group, gi, isMaster, myStatus, accountName, onApply, onCancel, onLeave, onAccept, onReject }: {
   group: Group; gi: number; isMaster: boolean; myStatus: MyStatus; accountName: string;
   onApply: (gi: number, role: string) => void;
@@ -622,27 +661,12 @@ export default function App() {
           ))}
 
           {/* 메모 */}
-          <div style={{ marginTop: 12, padding: "12px 14px", background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 12 }}>
-            <p style={{ margin: "0 0 8px", fontSize: 12, color: "#888", fontWeight: 500 }}>메모</p>
-            {detailParty.masterId === myName ? (
-              <>
-                <textarea
-                  value={detailParty.memo || ""}
-                  onChange={(e) => { if (e.target.value.length <= 100) updateMemo(detailParty.id, e.target.value); }}
-                  placeholder="파티에 대한 메모를 입력하세요 (최대 100자)"
-                  maxLength={100}
-                  style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", resize: "none", height: 72, fontFamily: "sans-serif" }}
-                />
-                <p style={{ margin: "4px 0 0", fontSize: 11, color: "#aaa", textAlign: "right" }}>
-                  {(detailParty.memo || "").length}/100
-                </p>
-              </>
-            ) : (
-              <p style={{ margin: 0, fontSize: 13, color: detailParty.memo ? "#333" : "#aaa", lineHeight: 1.6 }}>
-                {detailParty.memo || "메모 없음"}
-              </p>
-            )}
-          </div>
+          <MemoBox
+            partyId={detailParty.id}
+            memo={detailParty.memo || ""}
+            isMaster={detailParty.masterId === myName}
+            onSave={updateMemo}
+          />
 
           {(detailParty.masterId === myName || isAdmin) && (
             <button

@@ -17,6 +17,11 @@ const RAIDS: Record<string, { name: string; ilvl: number }[]> = {
     { name: "종막 (노말)", ilvl: 1720 }, { name: "종막 (하드)", ilvl: 1740 },
   ],
   "에픽": [{ name: "베히모스", ilvl: 1640 }],
+"어비스": [
+  { name: "지평의 성당 (1단계)", ilvl: 1700 },
+  { name: "지평의 성당 (2단계)", ilvl: 1720 },
+  { name: "지평의 성당 (3단계)", ilvl: 1750 },
+],
   "군단장": [
     { name: "발탄 (노말)", ilvl: 1415 }, { name: "발탄 (하드)", ilvl: 1445 },
     { name: "비아키스 (노말)", ilvl: 1430 }, { name: "비아키스 (하드)", ilvl: 1460 },
@@ -34,10 +39,10 @@ Object.entries(RAIDS).forEach(([cat, list]) =>
 );
 
 const CAT_COLOR: Record<string, string> = {
-  "그림자": "#993556", "카제로스": "#7F77DD", "에픽": "#D4537E", "군단장": "#1D9E75",
+  "그림자": "#993556", "카제로스": "#7F77DD", "에픽": "#D4537E", "군단장": "#1D9E75", "어비스": "#BA7517",
 };
 const CAT_BG: Record<string, string> = {
-  "그림자": "#FBEAF0", "카제로스": "#EEEDFE", "에픽": "#FBEAF0", "군단장": "#E1F5EE",
+  "그림자": "#FBEAF0", "카제로스": "#EEEDFE", "에픽": "#FBEAF0", "군단장": "#E1F5EE", "어비스": "#FAEEDA",
 };
 
 interface Person { accountName: string; charName: string; role: string; }

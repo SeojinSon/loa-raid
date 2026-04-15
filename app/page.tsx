@@ -44,6 +44,15 @@ const RAIDS: Record<string, { name: string; ilvl: number }[]> = {
   ],
 };
 
+const CLASSES = [
+  "버서커", "디스트로이어", "워로드", "홀리나이트", "슬레이어", "발키리",
+  "배틀마스터", "인파이터", "기공사", "창술사", "스트라이커", "브레이커",
+  "건슬링어", "데빌헌터", "블래스터", "스카우터", "호크아이",
+  "소서리스", "아르카나", "서머너", "바드",
+  "블레이드", "데모닉", "리퍼", "소울이터",
+  "도화가", "기상술사", "환수사", "가디언나이트",
+];
+
 const RAID_ILVL: Record<string, number> = {};
 const RAID_CAT: Record<string, string> = {};
 Object.entries(RAIDS).forEach(([cat, list]) =>
@@ -51,15 +60,18 @@ Object.entries(RAIDS).forEach(([cat, list]) =>
 );
 
 const CAT_COLOR: Record<string, string> = {
-  "그림자": "#993556", "카제로스": "#7F77DD", "에픽": "#D4537E",
-  "어비스": "#BA7517", "군단장": "#1D9E75",
+  "어비스": "#BA7517", "그림자": "#993556", "카제로스": "#7F77DD",
+  "에픽": "#D4537E", "군단장": "#1D9E75",
 };
 const CAT_BG: Record<string, string> = {
-  "그림자": "#FBEAF0", "카제로스": "#EEEDFE", "에픽": "#FBEAF0",
-  "어비스": "#FAEEDA", "군단장": "#E1F5EE",
+  "어비스": "#FAEEDA", "그림자": "#FBEAF0", "카제로스": "#EEEDFE",
+  "에픽": "#FBEAF0", "군단장": "#E1F5EE",
 };
 
-interface Person { accountName: string; charName: string; role: string; }
+interface Person {
+  accountName: string; charName: string; role: string;
+  className?: string; power?: string;
+}
 interface Group { members: Person[]; applicants: Person[]; }
 interface Party {
   id: number; raid: string; masterId: string; masterName: string;
@@ -84,30 +96,59 @@ function Badge({ cat }: { cat: string }) {
 }
 
 function ApplyPopup({ role, onConfirm, onClose }: {
-  role: string; onConfirm: (name: string) => void; onClose: () => void;
+  role: string;
+  onConfirm: (charName: string, className: string, power: string) => void;
+  onClose: () => void;
 }) {
   const [charName, setCharName] = useState("");
+  const [className, setClassName] = useState("");
+  const [power, setPower] = useState("");
+  const canSubmit = charName.trim() && className;
+
   return (
     <div
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: 280, border: "0.5px solid #ddd" }}>
-        <p style={{ margin: "0 0 6px", fontWeight: 500, fontSize: 15 }}>캐릭터명 입력</p>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: "#888" }}>{role} 슬롯에 참여할 캐릭터명을 입력하세요</p>
-        <input
-          autoFocus value={charName}
-          onChange={(e) => setCharName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && charName.trim()) onConfirm(charName.trim()); }}
-          placeholder="캐릭터명"
-          style={{ width: "100%", fontSize: 14, padding: "9px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginBottom: 12 }}
-        />
+      <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: 300, border: "0.5px solid #ddd" }}>
+        <p style={{ margin: "0 0 6px", fontWeight: 500, fontSize: 15 }}>신청 정보 입력</p>
+        <p style={{ margin: "0 0 16px", fontSize: 13, color: "#888" }}>{role} 슬롯에 참여할 정보를 입력하세요</p>
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ fontSize: 12, color: "#888" }}>캐릭터명</label>
+          <input
+            autoFocus value={charName}
+            onChange={(e) => setCharName(e.target.value)}
+            placeholder="캐릭터명"
+            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }}
+          />
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ fontSize: 12, color: "#888" }}>직업</label>
+          <select
+            value={className}
+            onChange={(e) => setClassName(e.target.value)}
+            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }}
+          >
+            <option value="">직업 선택</option>
+            {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 12, color: "#888" }}>전투력 (선택)</label>
+          <input
+            value={power}
+            onChange={(e) => setPower(e.target.value)}
+            placeholder="예: 6500"
+            type="number"
+            style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", marginTop: 4 }}
+          />
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={onClose} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "0.5px solid #ccc", background: "#f5f5f5", fontSize: 14, cursor: "pointer" }}>취소</button>
           <button
-            onClick={() => { if (charName.trim()) onConfirm(charName.trim()); }}
-            disabled={!charName.trim()}
-            style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "none", background: charName.trim() ? "#7F77DD" : "#eee", color: charName.trim() ? "#fff" : "#aaa", fontSize: 14, cursor: charName.trim() ? "pointer" : "default", fontWeight: 500 }}
+            onClick={() => { if (canSubmit) onConfirm(charName.trim(), className, power); }}
+            disabled={!canSubmit}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "none", background: canSubmit ? "#7F77DD" : "#eee", color: canSubmit ? "#fff" : "#aaa", fontSize: 14, cursor: canSubmit ? "pointer" : "default", fontWeight: 500 }}
           >
             신청
           </button>
@@ -230,6 +271,8 @@ function GroupCard({ group, gi, isMaster, myStatus, accountName, onApply, onCanc
                 {a.charName}
                 <span style={{ color: "#aaa" }}> ({a.accountName})</span>
                 <span style={{ color: a.role === "서폿" ? "#534AB7" : "#3B6D11" }}> · {a.role}</span>
+                {a.className && <span style={{ color: "#888" }}> · {a.className}</span>}
+                {a.power && <span style={{ color: "#888" }}> · {a.power}</span>}
               </span>
               <div style={{ display: "flex", gap: 5 }}>
                 <button onClick={() => onAccept(gi, i)} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "0.5px solid #1D9E75", background: "#E1F5EE", color: "#0F6E56", cursor: "pointer" }}>수락</button>
@@ -250,17 +293,15 @@ export default function App() {
   const [myName, setMyName] = useState("모험가");
   const [myOnly, setMyOnly] = useState(false);
   const [myId] = useState("user_me");
-  const [form, setForm] = useState({ raid: "세르카 (노말)", partyCount: 2, date: "" });
+  const [form, setForm] = useState({ raid: "지평의 성당 (3단계)", partyCount: 2, date: "" });
   const [toast, setToast] = useState("");
   const [popup, setPopup] = useState<{ partyId: number; gi: number; role: string } | null>(null);
 
-  // 계정명 localStorage에서 불러오기
   useEffect(() => {
     const savedName = localStorage.getItem("loa_account_name");
     if (savedName) setMyName(savedName);
   }, []);
 
-  // Supabase에서 파티 목록 불러오기 + 실시간 업데이트
   useEffect(() => {
     async function loadParties() {
       const { data, error } = await supabase
@@ -296,6 +337,7 @@ export default function App() {
     setTimeout(() => setToast(""), 2000);
   }
 
+  const ADMIN_NAME = "도라지파티";
   const detailParty = parties.find((p) => p.id === selected) || null;
   const myStatus: MyStatus = detailParty ? getMyStatus(detailParty.groups, myName) : { status: "none", gi: -1 };
 
@@ -326,14 +368,14 @@ export default function App() {
     setPopup({ partyId, gi, role });
   }
 
-  async function confirmApply(charName: string) {
+  async function confirmApply(charName: string, className: string, power: string) {
     if (!popup) return;
     const { partyId, gi, role } = popup;
     setPopup(null);
     const party = parties.find((p) => p.id === partyId);
     if (!party) return;
     const newGroups = party.groups.map((g, i) =>
-      i !== gi ? g : { ...g, applicants: [...g.applicants, { accountName: myName, charName, role }] }
+      i !== gi ? g : { ...g, applicants: [...g.applicants, { accountName: myName, charName, role, className, power }] }
     );
     await supabase.from("parties").update({ groups: newGroups }).eq("id", partyId);
     showToast(`${charName} 신청 완료!`);
@@ -401,8 +443,6 @@ export default function App() {
     showToast("파티가 개설되었습니다!");
     setScreen("list");
   }
-
-  const ADMIN_NAME = "도라지파티";
 
   const filteredParties = myOnly
     ? parties.filter((p) =>

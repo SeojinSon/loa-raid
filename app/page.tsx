@@ -393,8 +393,14 @@ export default function App() {
     setTimeout(() => setToast(""), 2000);
   }
 
-  const ADMIN_NAME = "도라지파티";
-  const detailParty = parties.find((p) => p.id === selected) || null;
+const ADMIN_NAME = "도라지파티";
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/check-admin")
+      .then((r) => r.json())
+      .then((d) => setIsAdmin(d.isAdmin));
+  }, []);  const detailParty = parties.find((p) => p.id === selected) || null;
   const myStatus: MyStatus = detailParty ? getMyStatus(detailParty.groups, myName) : { status: "none", gi: -1 };
 
   async function deleteParty(partyId: number) {
@@ -691,8 +697,7 @@ export default function App() {
             />
           ))}
 
-          {(detailParty.masterId === myName || myName === ADMIN_NAME) && (
-            <button
+            {(detailParty.masterId === myName || isAdmin) && (            <button
               onClick={() => {
                 if (confirm("정말 파티를 삭제할까요?")) {
                   deleteParty(detailParty.id);

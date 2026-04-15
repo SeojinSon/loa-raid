@@ -75,7 +75,7 @@ interface Person {
 interface Group { members: Person[]; applicants: Person[]; }
 interface Party {
   id: number; raid: string; masterId: string; masterName: string;
-  partyCount: number; date: string; groups: Group[];
+  partyCount: number; date: string; groups: Group[]; memo: string;
 }
 interface MyStatus { status: string; gi: number; }
 
@@ -357,6 +357,7 @@ export default function App() {
           partyCount: p.party_count,
           date: p.date || "",
           groups: p.groups,
+          memo: p.memo || "",
         })));
       }
     }
@@ -368,7 +369,7 @@ export default function App() {
         const p = payload.new as any;
         setParties((prev) => [{
           id: p.id, raid: p.raid, masterId: p.master_id, masterName: p.master_name,
-          partyCount: p.party_count, date: p.date || "", groups: p.groups,
+          partyCount: p.party_count, date: p.date || "", groups: p.groups, memo: p.memo || "",
         }, ...prev]);
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "parties" }, (payload) => {
@@ -376,7 +377,7 @@ export default function App() {
         setParties((prev) => prev.map((party) =>
           party.id === p.id ? {
             id: p.id, raid: p.raid, masterId: p.master_id, masterName: p.master_name,
-            partyCount: p.party_count, date: p.date || "", groups: p.groups,
+            partyCount: p.party_count, date: p.date || "", groups: p.groups, memo: p.memo || "",
           } : party
         ));
       })
@@ -401,6 +402,10 @@ export default function App() {
     await supabase.from("parties").delete().eq("id", partyId);
     setScreen("list");
     showToast("파티를 삭제했습니다.");
+  }
+
+  async function updateMemo(partyId: number, memo: string) {
+    await supabase.from("parties").update({ memo }).eq("id", partyId);
   }
 
   async function updateDate(partyId: number, date: string) {

@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { DiscordSDK } from "@discord/embedded-app-sdk";
+
+let discordSdk: DiscordSDK | null = null;
+if (typeof window !== "undefined" && window.location.hostname.includes("discordsays.com")) {
+  discordSdk = new DiscordSDK(process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID!);
+}
 
 const RAIDS: Record<string, { name: string; ilvl: number }[]> = {
   "어비스": [
@@ -226,16 +232,13 @@ function MemoBox({ partyId, memo, isMaster, onSave }: {
       <p style={{ margin: "0 0 8px", fontSize: 12, color: "#888", fontWeight: 500 }}>메모</p>
       {isMaster ? (
         <>
-          <textarea
-            value={localMemo}
+          <textarea value={localMemo}
             onChange={(e) => { if (e.target.value.length <= 100) setLocalMemo(e.target.value); }}
             placeholder="파티에 대한 메모를 입력하세요 (최대 100자)"
             maxLength={100}
             style={{ width: "100%", fontSize: 13, padding: "8px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box", resize: "none", height: 72, fontFamily: "sans-serif" }}
           />
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#aaa", textAlign: "right" }}>
-            {localMemo.length}/100
-          </p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#aaa", textAlign: "right" }}>{localMemo.length}/100</p>
         </>
       ) : (
         <p style={{ margin: 0, fontSize: 13, color: memo ? "#333" : "#aaa", lineHeight: 1.6 }}>
@@ -325,7 +328,6 @@ export default function App() {
   const [myName, setMyName] = useState("모험가");
   const [myOnly, setMyOnly] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [myId] = useState("user_me");
   const [form, setForm] = useState({ raid: "지평의 성당 (3단계)", partyCount: 2, date: "", charName: "", className: "", power: "", role: "서폿" });
   const [toast, setToast] = useState("");
   const [popup, setPopup] = useState<{ partyId: number; gi: number; role: string } | null>(null);
@@ -333,6 +335,11 @@ export default function App() {
   useEffect(() => {
     const savedName = localStorage.getItem("loa_account_name");
     if (savedName) setMyName(savedName);
+  }, []);
+
+  useEffect(() => {
+    if (!discordSdk) return;
+    discordSdk.ready().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -548,7 +555,6 @@ export default function App() {
       {screen === "create" && (
         <div style={{ padding: "0 16px" }}>
           <div style={{ background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 14, padding: 16, maxWidth: 420 }}>
-            {/* 내 정보 */}
             <div style={{ marginBottom: 14, padding: "12px 14px", background: "#f9f9f9", borderRadius: 10, border: "0.5px solid #eee" }}>
               <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 500 }}>내 정보</p>
               <div style={{ marginBottom: 8 }}>
@@ -660,7 +666,6 @@ export default function App() {
             />
           ))}
 
-          {/* 메모 */}
           <MemoBox
             partyId={detailParty.id}
             memo={detailParty.memo || ""}
@@ -669,8 +674,7 @@ export default function App() {
           />
 
           {(detailParty.masterId === myName || isAdmin) && (
-            <button
-              onClick={() => { if (confirm("정말 파티를 삭제할까요?")) deleteParty(detailParty.id); }}
+            <button onClick={() => { if (confirm("정말 파티를 삭제할까요?")) deleteParty(detailParty.id); }}
               style={{ width: "100%", padding: "10px 0", borderRadius: 10, border: "0.5px solid #E24B4A", background: "#FCEBEB", color: "#A32D2D", fontSize: 14, fontWeight: 500, cursor: "pointer", marginTop: 12 }}>
               파티 삭제
             </button>

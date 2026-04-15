@@ -333,7 +333,7 @@ export default function App() {
   const [myName, setMyName] = useState("모험가");
   const [myOnly, setMyOnly] = useState(false);
   const [myId] = useState("user_me");
-  const [form, setForm] = useState({ raid: "지평의 성당 (3단계)", partyCount: 2, date: "" });
+  const [form, setForm] = useState({ raid: "지평의 성당 (3단계)", partyCount: 2, date: "", charName: "", className: "", power: "" });
   const [toast, setToast] = useState("");
   const [popup, setPopup] = useState<{ partyId: number; gi: number; role: string } | null>(null);
 
@@ -393,14 +393,8 @@ export default function App() {
     setTimeout(() => setToast(""), 2000);
   }
 
-const ADMIN_NAME = "도라지파티";
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/check-admin")
-      .then((r) => r.json())
-      .then((d) => setIsAdmin(d.isAdmin));
-  }, []);  const detailParty = parties.find((p) => p.id === selected) || null;
+  const ADMIN_NAME = "도라지파티";
+  const detailParty = parties.find((p) => p.id === selected) || null;
   const myStatus: MyStatus = detailParty ? getMyStatus(detailParty.groups, myName) : { status: "none", gi: -1 };
 
   async function deleteParty(partyId: number) {
@@ -488,6 +482,8 @@ const ADMIN_NAME = "도라지파티";
 
   async function createParty() {
     if (!form.date) { showToast("날짜를 선택해주세요!"); return; }
+    if (!form.charName.trim()) { showToast("캐릭터명을 입력해주세요!"); return; }
+    if (!form.className) { showToast("직업을 선택해주세요!"); return; }
     const newParty = {
       id: Date.now(),
       raid: form.raid,
@@ -496,7 +492,7 @@ const ADMIN_NAME = "도라지파티";
       party_count: form.partyCount,
       date: form.date,
       groups: Array(form.partyCount).fill(null).map((_, i) => ({
-        members: i === 0 ? [{ accountName: myName, charName: myName, role: "서폿" }] : [],
+        members: i === 0 ? [{ accountName: myName, charName: form.charName.trim(), role: "서폿", className: form.className, power: form.power }] : [],
         applicants: [],
       })),
     };
@@ -601,6 +597,47 @@ const ADMIN_NAME = "도라지파티";
       {screen === "create" && (
         <div style={{ padding: "0 16px" }}>
           <div style={{ background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 14, padding: 16, maxWidth: 420 }}>
+            {/* 내 정보 */}
+            <div style={{ marginBottom: 14, padding: "12px 14px", background: "#f9f9f9", borderRadius: 10, border: "0.5px solid #eee" }}>
+              <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 500 }}>내 정보</p>
+              <div style={{ marginBottom: 8 }}>
+                <label style={{ fontSize: 12, color: "#888" }}>계정명</label>
+                <input
+                  value={myName} disabled
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ddd", background: "#f0f0f0", color: "#888", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <label style={{ fontSize: 12, color: "#888" }}>캐릭터명</label>
+                <input
+                  value={form.charName}
+                  onChange={(e) => setForm((f) => ({ ...f, charName: e.target.value }))}
+                  placeholder="참여할 캐릭터명"
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}
+                />
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <label style={{ fontSize: 12, color: "#888" }}>직업</label>
+                <select
+                  value={form.className}
+                  onChange={(e) => setForm((f) => ({ ...f, className: e.target.value }))}
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}
+                >
+                  <option value="">직업 선택</option>
+                  {CLASSES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#888" }}>전투력 (선택)</label>
+                <input
+                  value={form.power}
+                  onChange={(e) => setForm((f) => ({ ...f, power: e.target.value }))}
+                  placeholder="예: 6500"
+                  type="number"
+                  style={{ width: "100%", marginTop: 4, fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "0.5px solid #ccc", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 13, color: "#888" }}>레이드 선택</label>
               <select
@@ -697,7 +734,8 @@ const ADMIN_NAME = "도라지파티";
             />
           ))}
 
-            {(detailParty.masterId === myName || isAdmin) && (            <button
+          {(detailParty.masterId === myName || myName === ADMIN_NAME) && (
+            <button
               onClick={() => {
                 if (confirm("정말 파티를 삭제할까요?")) {
                   deleteParty(detailParty.id);

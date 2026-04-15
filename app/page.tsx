@@ -255,6 +255,10 @@ function GroupCard({ group, gi, isMaster, myStatus, accountName, onApply, onCanc
 }) {
   const canApply = myStatus.status === "none";
   const total = group.members.length + group.applicants.length;
+  const allPersons = [...group.members, ...group.applicants.filter(a =>
+    group.members.every(m => m.accountName !== a.accountName)
+  )];
+
   return (
     <div style={{ background: "#fff", border: "0.5px solid #e5e5e5", borderRadius: 12, padding: "12px 14px", marginBottom: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -262,9 +266,45 @@ function GroupCard({ group, gi, isMaster, myStatus, accountName, onApply, onCanc
         <span style={{ fontSize: 12, color: "#888" }}>{total}/4</span>
       </div>
       <Slots group={group} gi={gi} canApply={canApply} accountName={accountName} onApply={onApply} onCancel={onCancel} onLeave={onLeave} />
+
+      {/* 참여자 정보 목록 */}
+      {allPersons.length > 0 && (
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+          {allPersons.map((p, i) => {
+            const isPending = group.applicants.some(a => a.accountName === p.accountName);
+            const isSupport = p.role === "서폿";
+            return (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "6px 10px", borderRadius: 8,
+                background: isPending ? "#FAFAFA" : isSupport ? "#F3F0FD" : "#F5F9F5",
+                border: `0.5px solid ${isPending ? "#eee" : isSupport ? "#C5BFEF" : "#B8DFC0"}`,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{
+                    fontSize: 10, padding: "1px 6px", borderRadius: 10, fontWeight: 500,
+                    background: isSupport ? "#7F77DD" : "#1D9E75", color: "#fff",
+                  }}>{p.role}</span>
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>{p.charName}</span>
+                    <span style={{ fontSize: 11, color: "#aaa", marginLeft: 4 }}>({p.accountName})</span>
+                    {isPending && <span style={{ fontSize: 10, color: "#BA7517", marginLeft: 4 }}>대기중</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  {p.className && <span style={{ fontSize: 11, color: "#666" }}>{p.className}</span>}
+                  {p.power && <span style={{ fontSize: 11, color: "#7F77DD", fontWeight: 500 }}>{Number(p.power).toLocaleString()}</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 방장 신청자 수락/거절 */}
       {isMaster && group.applicants.length > 0 && (
         <div style={{ marginTop: 10, borderTop: "0.5px solid #eee", paddingTop: 8 }}>
-          <p style={{ fontSize: 11, color: "#888", margin: "0 0 6px" }}>신청자</p>
+          <p style={{ fontSize: 11, color: "#888", margin: "0 0 6px" }}>신청자 관리</p>
           {group.applicants.map((a, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <span style={{ fontSize: 12 }}>
@@ -324,8 +364,24 @@ export default function App() {
 
     const channel = supabase
       .channel("parties-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "parties" }, () => {
-        loadParties();
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "parties" }, (payload) => {
+        const p = payload.new as any;
+        setParties((prev) => [{
+          id: p.id, raid: p.raid, masterId: p.master_id, masterName: p.master_name,
+          partyCount: p.party_count, date: p.date || "", groups: p.groups,
+        }, ...prev]);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "parties" }, (payload) => {
+        const p = payload.new as any;
+        setParties((prev) => prev.map((party) =>
+          party.id === p.id ? {
+            id: p.id, raid: p.raid, masterId: p.master_id, masterName: p.master_name,
+            partyCount: p.party_count, date: p.date || "", groups: p.groups,
+          } : party
+        ));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "parties" }, (payload) => {
+        setParties((prev) => prev.filter((party) => party.id !== payload.old.id));
       })
       .subscribe();
 

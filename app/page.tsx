@@ -216,6 +216,13 @@ function MemoBox({ partyId, memo, isMaster, onSave }: {
 }) {
   const [localMemo, setLocalMemo] = useState(memo);
 
+  useEffect(() => {
+  async function initDiscord() {
+    await discordSdk.ready();
+  }
+  initDiscord().catch(() => {});
+}, []);
+
   useEffect(() => { setLocalMemo(memo); }, [memo]);
 
   useEffect(() => {

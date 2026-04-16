@@ -189,7 +189,7 @@ function Badge({ cat }: { cat: string }) {
   );
 }
 
-function ApplyPopup({
+function PartyActionPopup({
   mode,
   role,
   defaultAccountName,
@@ -209,6 +209,7 @@ function ApplyPopup({
 
   async function handleSubmit() {
     if (!charName.trim()) return;
+
     if (mode === "addMember" && !accountName.trim()) {
       setError("계정명을 입력해주세요.");
       return;
@@ -597,6 +598,7 @@ function GroupCard({
   onLeave,
   onAccept,
   onReject,
+  onKickMember,
 }: {
   group: Group;
   gi: number;
@@ -609,6 +611,7 @@ function GroupCard({
   onLeave: (gi: number) => void;
   onAccept: (gi: number, ai: number) => void;
   onReject: (gi: number, ai: number) => void;
+  onKickMember: (gi: number, memberAccountName: string) => void;
 }) {
   const canApply = myStatus.status === "none";
   const total = group.members.length + group.applicants.length;
@@ -649,6 +652,7 @@ function GroupCard({
           {allPersons.map((p, i) => {
             const isPending = group.applicants.some((a) => a.accountName === p.accountName);
             const isSupport = p.role === "서폿";
+            const isMe = p.accountName === accountName;
 
             return (
               <div
@@ -661,9 +665,10 @@ function GroupCard({
                   borderRadius: 8,
                   background: isPending ? "#FAFAFA" : isSupport ? "#F3F0FD" : "#F5F9F5",
                   border: `0.5px solid ${isPending ? "#eee" : isSupport ? "#C5BFEF" : "#B8DFC0"}`,
+                  gap: 10,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                   <span
                     style={{
                       fontSize: 10,
@@ -672,11 +677,13 @@ function GroupCard({
                       fontWeight: 500,
                       background: isSupport ? "#7F77DD" : "#1D9E75",
                       color: "#fff",
+                      flexShrink: 0,
                     }}
                   >
                     {p.role}
                   </span>
-                  <div>
+
+                  <div style={{ minWidth: 0 }}>
                     <span style={{ fontSize: 12, fontWeight: 500 }}>{p.charName}</span>
                     <span style={{ fontSize: 11, color: "#aaa", marginLeft: 4 }}>({p.accountName})</span>
                     {isPending && <span style={{ fontSize: 10, color: "#BA7517", marginLeft: 4 }}>대기중</span>}
@@ -686,6 +693,23 @@ function GroupCard({
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                   {p.className && <span style={{ fontSize: 11, color: "#666" }}>{p.className}</span>}
                   {p.power && <span style={{ fontSize: 11, color: "#7F77DD", fontWeight: 500 }}>Lv.{p.power}</span>}
+
+                  {isMaster && !isPending && !isMe && (
+                    <button
+                      onClick={() => onKickMember(gi, p.accountName)}
+                      style={{
+                        fontSize: 11,
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        border: "0.5px solid #E24B4A",
+                        background: "#FCEBEB",
+                        color: "#A32D2D",
+                        cursor: "pointer",
+                      }}
+                    >
+                      강퇴
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -1102,6 +1126,36 @@ export default function App() {
     showToast("거절했습니다.");
   }
 
+  async function kickMember(partyId: number, gi: number, memberAccountName: string) {
+    const party = parties.find((p) => p.id === partyId);
+    if (!party) return;
+
+    if (memberAccountName === myName) {
+      showToast("본인은 강퇴할 수 없습니다.");
+      return;
+    }
+
+    const newGroups = party.groups.map((g, i) =>
+      i !== gi
+        ? g
+        : {
+            ...g,
+            members: g.members.filter((m) => m.accountName !== memberAccountName),
+          }
+    );
+
+    const { error } = await supabase.from("parties").update({ groups: newGroups }).eq("id", partyId);
+
+    if (error) {
+      console.error("강퇴 실패:", error);
+      showToast(`강퇴 실패: ${error.message}`);
+      return;
+    }
+
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, groups: newGroups } : p)));
+    showToast("멤버를 강퇴했습니다.");
+  }
+
   async function createParty() {
     if (!form.date) {
       showToast("날짜를 선택해주세요.");
@@ -1119,7 +1173,6 @@ export default function App() {
       showToast("캐릭터 정보 조회 중입니다.");
 
       const info = await fetchLostarkInfo(form.charName.trim());
-      console.log("로아 API 결과:", info);
 
       if (!info) {
         showToast("캐릭터를 찾을 수 없어요. 전투정보실 공개 여부를 확인해주세요.");
@@ -1152,12 +1205,7 @@ export default function App() {
         groups,
       };
 
-      console.log("Supabase insert 시도:", newParty);
-
       const { data, error } = await supabase.from("parties").insert([newParty]).select().single();
-
-      console.log("Supabase 결과 data:", data);
-      console.log("Supabase 결과 error:", error);
 
       if (error) {
         console.error("파티 생성 실패:", error);
@@ -1232,7 +1280,7 @@ export default function App() {
       )}
 
       {popup && (
-        <ApplyPopup
+        <PartyActionPopup
           mode={popup.mode}
           role={popup.role}
           defaultAccountName={popup.mode === "apply" ? myName : ""}
@@ -1573,6 +1621,9 @@ export default function App() {
               onLeave={(groupIndex) => leave(detailParty.id, groupIndex)}
               onAccept={(groupIndex, ai) => accept(detailParty.id, groupIndex, ai)}
               onReject={(groupIndex, ai) => reject(detailParty.id, groupIndex, ai)}
+              onKickMember={(groupIndex, memberAccountName) =>
+                kickMember(detailParty.id, groupIndex, memberAccountName)
+              }
             />
           ))}
 

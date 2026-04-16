@@ -140,6 +140,38 @@ function formatPartyDate(date: string) {
   });
 }
 
+function normalizeGroups(groups: unknown): Group[] {
+  let parsed = groups;
+
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      parsed = [];
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed.map((g: any) => ({
+    members: Array.isArray(g?.members) ? g.members : [],
+    applicants: Array.isArray(g?.applicants) ? g.applicants : [],
+  }));
+}
+
+function normalizePartyRow(p: any): Party {
+  return {
+    id: p.id,
+    raid: p.raid ?? "",
+    masterId: p.master_id ?? p.masterId ?? "",
+    masterName: p.master_name ?? p.masterName ?? "",
+    partyCount: p.party_count ?? p.partyCount ?? 1,
+    date: p.date ?? "",
+    groups: normalizeGroups(p.groups),
+    memo: p.memo ?? "",
+  };
+}
+
 function Badge({ cat }: { cat: string }) {
   return (
     <span
@@ -158,20 +190,29 @@ function Badge({ cat }: { cat: string }) {
 }
 
 function ApplyPopup({
+  mode,
   role,
+  defaultAccountName,
   onConfirm,
   onClose,
 }: {
+  mode: "apply" | "addMember";
   role: string;
-  onConfirm: (charName: string, className: string, power: string) => void;
+  defaultAccountName?: string;
+  onConfirm: (accountName: string, charName: string, className: string, power: string) => void;
   onClose: () => void;
 }) {
+  const [accountName, setAccountName] = useState(defaultAccountName ?? "");
   const [charName, setCharName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit() {
     if (!charName.trim()) return;
+    if (mode === "addMember" && !accountName.trim()) {
+      setError("계정명을 입력해주세요.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -183,7 +224,13 @@ function ApplyPopup({
       return;
     }
 
-    onConfirm(info.charName, info.className ?? "", info.ilvl ? String(info.ilvl) : "");
+    onConfirm(
+      mode === "addMember" ? accountName.trim() : defaultAccountName || "",
+      info.charName,
+      info.className ?? "",
+      info.ilvl ? String(info.ilvl) : ""
+    );
+
     setLoading(false);
   }
 
@@ -207,14 +254,39 @@ function ApplyPopup({
           background: "#fff",
           borderRadius: 16,
           padding: 24,
-          width: 300,
+          width: 320,
           border: "0.5px solid #ddd",
         }}
       >
-        <p style={{ margin: "0 0 6px", fontWeight: 500, fontSize: 15 }}>신청 정보 입력</p>
+        <p style={{ margin: "0 0 6px", fontWeight: 500, fontSize: 15 }}>
+          {mode === "addMember" ? "멤버 직접 추가" : "신청 정보 입력"}
+        </p>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: "#888" }}>
           {role} 슬롯 · 캐릭터명 입력 시 직업/아이템레벨을 자동으로 가져와요
         </p>
+
+        {mode === "addMember" && (
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: 12, color: "#888" }}>계정명</label>
+            <input
+              value={accountName}
+              onChange={(e) => {
+                setAccountName(e.target.value);
+                setError("");
+              }}
+              placeholder="예: 길드원계정"
+              style={{
+                width: "100%",
+                fontSize: 14,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: `0.5px solid ${error && !accountName.trim() ? "#E24B4A" : "#ccc"}`,
+                boxSizing: "border-box",
+                marginTop: 4,
+              }}
+            />
+          </div>
+        )}
 
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, color: "#888" }}>캐릭터명 (전투정보실 공개 필요)</label>
@@ -259,20 +331,29 @@ function ApplyPopup({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!charName.trim() || loading}
+            disabled={!charName.trim() || loading || (mode === "addMember" && !accountName.trim())}
             style={{
               flex: 1,
               padding: "9px 0",
               borderRadius: 8,
               border: "none",
-              background: charName.trim() && !loading ? "#7F77DD" : "#eee",
-              color: charName.trim() && !loading ? "#fff" : "#aaa",
+              background:
+                charName.trim() && !loading && (mode === "apply" || accountName.trim())
+                  ? "#7F77DD"
+                  : "#eee",
+              color:
+                charName.trim() && !loading && (mode === "apply" || accountName.trim())
+                  ? "#fff"
+                  : "#aaa",
               fontSize: 14,
-              cursor: charName.trim() && !loading ? "pointer" : "default",
+              cursor:
+                charName.trim() && !loading && (mode === "apply" || accountName.trim())
+                  ? "pointer"
+                  : "default",
               fontWeight: 500,
             }}
           >
-            {loading ? "조회 중..." : "신청"}
+            {loading ? "조회 중..." : mode === "addMember" ? "추가" : "신청"}
           </button>
         </div>
       </div>
@@ -284,16 +365,20 @@ function Slots({
   group,
   gi,
   canApply,
+  isMaster,
   accountName,
   onApply,
+  onAddMember,
   onCancel,
   onLeave,
 }: {
   group: Group;
   gi: number;
   canApply: boolean;
+  isMaster: boolean;
   accountName: string;
   onApply: (gi: number, role: string) => void;
+  onAddMember: (gi: number, role: string) => void;
   onCancel: (gi: number) => void;
   onLeave: (gi: number) => void;
 }) {
@@ -339,9 +424,15 @@ function Slots({
         const border = isConfirming ? "#E24B4A" : isSupport ? "#7F77DD" : "#888780";
 
         function handleClick() {
-          if (isEmpty && canApply) {
-            onApply(gi, s.role);
-            return;
+          if (isEmpty) {
+            if (isMaster) {
+              onAddMember(gi, s.role);
+              return;
+            }
+            if (canApply) {
+              onApply(gi, s.role);
+              return;
+            }
           }
 
           if (isMe) {
@@ -372,8 +463,8 @@ function Slots({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              cursor: (isEmpty && canApply) || isMe ? "pointer" : "default",
-              opacity: isEmpty && !canApply ? 0.4 : 1,
+              cursor: (isEmpty && (canApply || isMaster)) || isMe ? "pointer" : "default",
+              opacity: isEmpty && !(canApply || isMaster) ? 0.4 : 1,
             }}
           >
             <span
@@ -501,6 +592,7 @@ function GroupCard({
   myStatus,
   accountName,
   onApply,
+  onAddMember,
   onCancel,
   onLeave,
   onAccept,
@@ -512,6 +604,7 @@ function GroupCard({
   myStatus: MyStatus;
   accountName: string;
   onApply: (gi: number, role: string) => void;
+  onAddMember: (gi: number, role: string) => void;
   onCancel: (gi: number) => void;
   onLeave: (gi: number) => void;
   onAccept: (gi: number, ai: number) => void;
@@ -543,8 +636,10 @@ function GroupCard({
         group={group}
         gi={gi}
         canApply={canApply}
+        isMaster={isMaster}
         accountName={accountName}
         onApply={onApply}
+        onAddMember={onAddMember}
         onCancel={onCancel}
         onLeave={onLeave}
       />
@@ -673,7 +768,12 @@ export default function App() {
   });
   const [formLoading, setFormLoading] = useState(false);
   const [toast, setToast] = useState("");
-  const [popup, setPopup] = useState<{ partyId: number; gi: number; role: string } | null>(null);
+  const [popup, setPopup] = useState<{
+    mode: "apply" | "addMember";
+    partyId: number;
+    gi: number;
+    role: string;
+  } | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -681,28 +781,22 @@ export default function App() {
   }, []);
 
   const loadParties = useCallback(async () => {
-    const { data, error } = await supabase.from("parties").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("parties")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("파티 목록 조회 실패:", error);
+      showToast(`목록 불러오기 실패: ${error.message}`);
       return;
     }
 
     if (!data) return;
 
-    setParties(
-      data.map((p: any) => ({
-        id: p.id,
-        raid: p.raid,
-        masterId: p.master_id,
-        masterName: p.master_name,
-        partyCount: p.party_count,
-        date: p.date || "",
-        groups: Array.isArray(p.groups) ? p.groups : [],
-        memo: p.memo || "",
-      }))
-    );
-  }, []);
+    const normalized = data.map(normalizePartyRow);
+    setParties(normalized);
+  }, [showToast]);
 
   useEffect(() => {
     const savedName = localStorage.getItem("loa_account_name");
@@ -739,7 +833,7 @@ export default function App() {
       return;
     }
 
-    await loadParties();
+    setParties((prev) => prev.filter((p) => p.id !== partyId));
     setScreen("list");
     showToast("파티를 삭제했습니다.");
   }
@@ -753,7 +847,7 @@ export default function App() {
       return;
     }
 
-    await loadParties();
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, date: date || "" } : p)));
   }
 
   async function updateMemo(partyId: number, memo: string) {
@@ -764,6 +858,8 @@ export default function App() {
       showToast(`메모 저장 실패: ${error.message}`);
       return;
     }
+
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, memo } : p)));
   }
 
   function openApplyPopup(partyId: number, gi: number, role: string) {
@@ -795,10 +891,36 @@ export default function App() {
       }
     }
 
-    setPopup({ partyId, gi, role });
+    setPopup({ mode: "apply", partyId, gi, role });
   }
 
-  async function confirmApply(charName: string, className: string, power: string) {
+  function openAddMemberPopup(partyId: number, gi: number, role: string) {
+    const party = parties.find((p) => p.id === partyId);
+    if (!party) return;
+
+    const g = party.groups[gi];
+
+    if (role === "서폿") {
+      const taken = g.members.some((m) => m.role === "서폿") || g.applicants.some((a) => a.role === "서폿");
+      if (taken) {
+        showToast("서폿 자리가 찼습니다.");
+        return;
+      }
+    }
+
+    if (role === "딜러") {
+      const cnt =
+        g.members.filter((m) => m.role === "딜러").length + g.applicants.filter((a) => a.role === "딜러").length;
+      if (cnt >= 3) {
+        showToast("딜러 자리가 찼습니다.");
+        return;
+      }
+    }
+
+    setPopup({ mode: "addMember", partyId, gi, role });
+  }
+
+  async function confirmApply(accountName: string, charName: string, className: string, power: string) {
     if (!popup) return;
 
     const { partyId, gi, role } = popup;
@@ -812,7 +934,7 @@ export default function App() {
         ? g
         : {
             ...g,
-            applicants: [...g.applicants, { accountName: myName, charName, role, className, power }],
+            applicants: [...g.applicants, { accountName, charName, role, className, power }],
           }
     );
 
@@ -824,8 +946,61 @@ export default function App() {
       return;
     }
 
-    await loadParties();
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, groups: newGroups } : p)));
     showToast(`${charName} 신청 완료`);
+  }
+
+  async function confirmAddMember(accountName: string, charName: string, className: string, power: string) {
+    if (!popup) return;
+
+    const { partyId, gi, role } = popup;
+    setPopup(null);
+
+    const party = parties.find((p) => p.id === partyId);
+    if (!party) return;
+
+    const targetGroup = party.groups[gi];
+
+    const alreadyExists = party.groups.some(
+      (g) =>
+        g.members.some((m) => m.accountName === accountName) ||
+        g.applicants.some((a) => a.accountName === accountName)
+    );
+
+    if (alreadyExists) {
+      showToast("이미 파티에 들어있는 계정명입니다.");
+      return;
+    }
+
+    if (role === "서폿" && targetGroup.members.some((m) => m.role === "서폿")) {
+      showToast("서폿 자리가 찼습니다.");
+      return;
+    }
+
+    if (role === "딜러" && targetGroup.members.filter((m) => m.role === "딜러").length >= 3) {
+      showToast("딜러 자리가 찼습니다.");
+      return;
+    }
+
+    const newGroups = party.groups.map((g, i) =>
+      i !== gi
+        ? g
+        : {
+            ...g,
+            members: [...g.members, { accountName, charName, role, className, power }],
+          }
+    );
+
+    const { error } = await supabase.from("parties").update({ groups: newGroups }).eq("id", partyId);
+
+    if (error) {
+      console.error("멤버 추가 실패:", error);
+      showToast(`멤버 추가 실패: ${error.message}`);
+      return;
+    }
+
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, groups: newGroups } : p)));
+    showToast(`${charName} 멤버 추가 완료`);
   }
 
   async function cancelApply(partyId: number, gi: number) {
@@ -844,7 +1019,7 @@ export default function App() {
       return;
     }
 
-    await loadParties();
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, groups: newGroups } : p)));
     showToast("신청을 취소했습니다.");
   }
 
@@ -864,7 +1039,7 @@ export default function App() {
       return;
     }
 
-    await loadParties();
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, groups: newGroups } : p)));
     showToast("참여를 취소했습니다.");
   }
 
@@ -903,7 +1078,7 @@ export default function App() {
       return;
     }
 
-    await loadParties();
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, groups: newGroups } : p)));
     showToast("신청을 수락했습니다.");
   }
 
@@ -923,7 +1098,7 @@ export default function App() {
       return;
     }
 
-    await loadParties();
+    setParties((prev) => prev.map((p) => (p.id === partyId ? { ...p, groups: newGroups } : p)));
     showToast("거절했습니다.");
   }
 
@@ -951,6 +1126,22 @@ export default function App() {
         return;
       }
 
+      const groups = Array.from({ length: form.partyCount }, (_, i) => ({
+        members:
+          i === 0
+            ? [
+                {
+                  accountName: myName,
+                  charName: info.charName,
+                  role: form.role,
+                  className: info.className ?? "",
+                  power: info.ilvl ? String(info.ilvl) : "",
+                },
+              ]
+            : [],
+        applicants: [],
+      }));
+
       const newParty = {
         raid: form.raid,
         master_id: myName,
@@ -958,21 +1149,7 @@ export default function App() {
         party_count: form.partyCount,
         date: form.date || null,
         memo: "",
-        groups: Array.from({ length: form.partyCount }, (_, i) => ({
-          members:
-            i === 0
-              ? [
-                  {
-                    accountName: myName,
-                    charName: info.charName,
-                    role: form.role,
-                    className: info.className ?? "",
-                    power: info.ilvl ? String(info.ilvl) : "",
-                  },
-                ]
-              : [],
-          applicants: [],
-        })),
+        groups,
       };
 
       console.log("Supabase insert 시도:", newParty);
@@ -988,7 +1165,13 @@ export default function App() {
         return;
       }
 
-      await loadParties();
+      const normalized = data ? normalizePartyRow(data) : null;
+
+      if (normalized) {
+        setParties((prev) => [normalized, ...prev]);
+      } else {
+        await loadParties();
+      }
 
       setForm({
         raid: "지평의 성당 (3단계)",
@@ -1000,8 +1183,8 @@ export default function App() {
 
       showToast("파티가 개설되었습니다.");
 
-      if (data?.id) {
-        setSelected(data.id);
+      if (normalized?.id) {
+        setSelected(normalized.id);
         setScreen("detail");
       } else {
         setScreen("list");
@@ -1048,7 +1231,15 @@ export default function App() {
         </div>
       )}
 
-      {popup && <ApplyPopup role={popup.role} onConfirm={confirmApply} onClose={() => setPopup(null)} />}
+      {popup && (
+        <ApplyPopup
+          mode={popup.mode}
+          role={popup.role}
+          defaultAccountName={popup.mode === "apply" ? myName : ""}
+          onConfirm={popup.mode === "addMember" ? confirmAddMember : confirmApply}
+          onClose={() => setPopup(null)}
+        />
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 16px 8px" }}>
         {screen !== "list" && (
@@ -1377,6 +1568,7 @@ export default function App() {
               myStatus={myStatus}
               accountName={myName}
               onApply={(groupIndex, role) => openApplyPopup(detailParty.id, groupIndex, role)}
+              onAddMember={(groupIndex, role) => openAddMemberPopup(detailParty.id, groupIndex, role)}
               onCancel={(groupIndex) => cancelApply(detailParty.id, groupIndex)}
               onLeave={(groupIndex) => leave(detailParty.id, groupIndex)}
               onAccept={(groupIndex, ai) => accept(detailParty.id, groupIndex, ai)}

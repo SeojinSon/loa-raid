@@ -1,50 +1,35 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const charName = searchParams.get("charName");
+const LOSTARK_API = "https://developer-lostark.game.onstove.com";
 
-  if (!charName) {
-    return NextResponse.json({ error: "charName 필요" }, { status: 400 });
-  }
+export async function GET(req: NextRequest) {
+  const charName = req.nextUrl.searchParams.get("charName");
+  if (!charName) return NextResponse.json({ error: "캐릭터명 없음" }, { status: 400 });
 
   try {
     const res = await fetch(
-      `https://developer-lostark.game.onstove.com/armories/characters/${encodeURIComponent(charName)}/profiles`,
+      `${LOSTARK_API}/armories/characters/${encodeURIComponent(charName)}/profiles`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.LOSTARK_API_KEY}`,
+          Authorization: `bearer ${process.env.LOSTARK_API_KEY}`,
+          Accept: "application/json",
         },
       }
     );
 
     if (!res.ok) {
-      return NextResponse.json({ error: "조회 실패" }, { status: 500 });
+      return NextResponse.json({ error: "캐릭터를 찾을 수 없어요." }, { status: 404 });
     }
 
-    const data = await res.json();
-
-    // ✅ 아이템 레벨
-    const ilvl = data.ItemAvgLevel?.replace(/,/g, "") ?? "";
-
-    // ✅ 전투력 (Stats에서 추출)
-    let combatPower = "";
-
-    if (Array.isArray(data.Stats)) {
-      const stat = data.Stats.find((s: any) => s.Type === "공격력");
-      if (stat) {
-        combatPower = stat.Value?.replace(/,/g, "") ?? "";
-      }
-    }
+    const profile = await res.json();
 
     return NextResponse.json({
-      charName: data.CharacterName,
-      className: data.CharacterClassName,
-      ilvl,
-      combatPower,
+      charName:  profile.CharacterName,
+      className: profile.CharacterClassName,
+      ilvl:      profile.ItemAvgLevel,
     });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    console.error("API 오류:", e);
+    return NextResponse.json({ error: "API 오류" }, { status: 500 });
   }
 }

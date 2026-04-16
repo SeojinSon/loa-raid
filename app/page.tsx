@@ -80,7 +80,8 @@ interface Person {
   charName: string;
   role: string;
   className?: string;
-  power?: string;
+  itemLevel?: string;
+  combatPower?: string;
 }
 
 interface Group {
@@ -199,7 +200,13 @@ function PartyActionPopup({
   mode: "apply" | "addMember";
   role: string;
   defaultAccountName?: string;
-  onConfirm: (accountName: string, charName: string, className: string, power: string) => void;
+  onConfirm: (
+    accountName: string,
+    charName: string,
+    className: string,
+    itemLevel: string,
+    combatPower: string
+  ) => void;
   onClose: () => void;
 }) {
   const [accountName, setAccountName] = useState(defaultAccountName ?? "");
@@ -229,7 +236,8 @@ function PartyActionPopup({
       mode === "addMember" ? accountName.trim() : defaultAccountName || "",
       info.charName,
       info.className ?? "",
-      info.ilvl ? String(info.ilvl) : ""
+      info.itemLevel ?? "",
+      info.combatPower ?? ""
     );
 
     setLoading(false);
@@ -263,7 +271,7 @@ function PartyActionPopup({
           {mode === "addMember" ? "멤버 직접 추가" : "신청 정보 입력"}
         </p>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: "#888" }}>
-          {role} 슬롯 · 캐릭터명 입력 시 직업/아이템레벨을 자동으로 가져와요
+          {role} 슬롯 · 캐릭터명 입력 시 직업/템렙/전투력을 자동으로 가져와요
         </p>
 
         {mode === "addMember" && (
@@ -692,7 +700,16 @@ function GroupCard({
 
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                   {p.className && <span style={{ fontSize: 11, color: "#666" }}>{p.className}</span>}
-                  {p.power && <span style={{ fontSize: 11, color: "#7F77DD", fontWeight: 500 }}>Lv.{p.power}</span>}
+                  {p.itemLevel && (
+                    <span style={{ fontSize: 11, color: "#534AB7", fontWeight: 500 }}>
+                      Lv.{p.itemLevel}
+                    </span>
+                  )}
+                  {p.combatPower && (
+                    <span style={{ fontSize: 11, color: "#C26B17", fontWeight: 500 }}>
+                      전투력 {p.combatPower}
+                    </span>
+                  )}
 
                   {isMaster && !isPending && !isMe && (
                     <button
@@ -735,7 +752,8 @@ function GroupCard({
                 <span style={{ color: "#aaa" }}> ({a.accountName})</span>
                 <span style={{ color: a.role === "서폿" ? "#534AB7" : "#3B6D11" }}> · {a.role}</span>
                 {a.className && <span style={{ color: "#888" }}> · {a.className}</span>}
-                {a.power && <span style={{ color: "#7F77DD", fontWeight: 500 }}> · Lv.{a.power}</span>}
+                {a.itemLevel && <span style={{ color: "#534AB7", fontWeight: 500 }}> · Lv.{a.itemLevel}</span>}
+                {a.combatPower && <span style={{ color: "#C26B17", fontWeight: 500 }}> · 전투력 {a.combatPower}</span>}
               </span>
 
               <div style={{ display: "flex", gap: 5 }}>
@@ -944,7 +962,13 @@ export default function App() {
     setPopup({ mode: "addMember", partyId, gi, role });
   }
 
-  async function confirmApply(accountName: string, charName: string, className: string, power: string) {
+  async function confirmApply(
+    accountName: string,
+    charName: string,
+    className: string,
+    itemLevel: string,
+    combatPower: string
+  ) {
     if (!popup) return;
 
     const { partyId, gi, role } = popup;
@@ -958,7 +982,7 @@ export default function App() {
         ? g
         : {
             ...g,
-            applicants: [...g.applicants, { accountName, charName, role, className, power }],
+            applicants: [...g.applicants, { accountName, charName, role, className, itemLevel, combatPower }],
           }
     );
 
@@ -974,7 +998,13 @@ export default function App() {
     showToast(`${charName} 신청 완료`);
   }
 
-  async function confirmAddMember(accountName: string, charName: string, className: string, power: string) {
+  async function confirmAddMember(
+    accountName: string,
+    charName: string,
+    className: string,
+    itemLevel: string,
+    combatPower: string
+  ) {
     if (!popup) return;
 
     const { partyId, gi, role } = popup;
@@ -1011,7 +1041,7 @@ export default function App() {
         ? g
         : {
             ...g,
-            members: [...g.members, { accountName, charName, role, className, power }],
+            members: [...g.members, { accountName, charName, role, className, itemLevel, combatPower }],
           }
     );
 
@@ -1188,7 +1218,8 @@ export default function App() {
                   charName: info.charName,
                   role: form.role,
                   className: info.className ?? "",
-                  power: info.ilvl ? String(info.ilvl) : "",
+                  itemLevel: info.itemLevel ?? "",
+                  combatPower: info.combatPower ?? "",
                 },
               ]
             : [],
@@ -1461,7 +1492,7 @@ export default function App() {
                 <input
                   value={form.charName}
                   onChange={(e) => setForm((f) => ({ ...f, charName: e.target.value }))}
-                  placeholder="캐릭터명 입력 시 직업/아이템레벨을 자동으로 가져와요"
+                  placeholder="캐릭터명 입력 시 직업/템렙/전투력을 자동으로 가져와요"
                   style={{
                     width: "100%",
                     marginTop: 4,

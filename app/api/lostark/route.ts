@@ -1,35 +1,44 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-const LOSTARK_API = "https://developer-lostark.game.onstove.com";
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const charName = searchParams.get("charName");
 
-export async function GET(req: NextRequest) {
-  const charName = req.nextUrl.searchParams.get("charName");
-  if (!charName) return NextResponse.json({ error: "캐릭터명 없음" }, { status: 400 });
+  if (!charName) {
+    return NextResponse.json({ error: "charName 필요" }, { status: 400 });
+  }
 
   try {
     const res = await fetch(
-      `${LOSTARK_API}/armories/characters/${encodeURIComponent(charName)}/profiles`,
+      `https://developer-lostark.game.onstove.com/armories/characters/${encodeURIComponent(charName)}/profiles`,
       {
         headers: {
-          Authorization: `bearer ${process.env.LOSTARK_API_KEY}`,
-          Accept: "application/json",
+          accept: "application/json",
+          authorization: `bearer ${process.env.LOSTARK_API_KEY}`,
         },
+        cache: "no-store",
       }
     );
 
     if (!res.ok) {
-      return NextResponse.json({ error: "캐릭터를 찾을 수 없어요." }, { status: 404 });
+      const text = await res.text();
+      console.error("Lostark API 실패:", res.status, text);
+      return NextResponse.json({ error: "조회 실패" }, { status: res.status });
     }
 
-    const profile = await res.json();
+    const data = await res.json();
+
+    const itemLevel = data?.ItemAvgLevel ? String(data.ItemAvgLevel).replace(/,/g, "") : "";
+    const combatPower = data?.CombatPower ? String(data.CombatPower).replace(/,/g, "") : "";
 
     return NextResponse.json({
-      charName:  profile.CharacterName,
-      className: profile.CharacterClassName,
-      ilvl:      profile.ItemAvgLevel,
+      charName: data?.CharacterName ?? "",
+      className: data?.CharacterClassName ?? "",
+      itemLevel,
+      combatPower,
     });
-  } catch (e) {
-    console.error("API 오류:", e);
-    return NextResponse.json({ error: "API 오류" }, { status: 500 });
+  } catch (error) {
+    console.error("lostark api error:", error);
+    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
   }
 }

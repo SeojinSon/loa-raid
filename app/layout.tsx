@@ -31,3 +31,13 @@ export default function RootLayout({
     </html>
   );
 }
+
+<head>
+  <script
+    async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5314454100878133"
+    crossOrigin="anonymous"
+  ></script>
+
+  <meta name="google-adsense-account" content="ca-pub-5314454100878133" />
+</head>
